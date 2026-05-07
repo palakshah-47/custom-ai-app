@@ -1,0 +1,13 @@
+.footer {
+  text-align: center;
+  padding: 6px;
+  font-size: 11px;
+  color: #aaa;
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-border-alt);
+  flex-shrink: 0;
+}
+
+.footer a {
+  color: var(--color-teal);
+}

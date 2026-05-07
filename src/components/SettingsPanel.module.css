@@ -1,0 +1,181 @@
+.section {
+  margin-bottom: 20px;
+}
+
+.sectionLabel {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  margin-bottom: 8px;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.labelRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #333;
+}
+
+.labelTitle {
+  font-weight: 600;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.labelHint {
+  font-size: 11px;
+  color: #aaa;
+  font-weight: 400;
+}
+
+.checkbox {
+  width: 14px;
+  height: 14px;
+  accent-color: var(--color-teal);
+  cursor: pointer;
+}
+
+.outlineBtn {
+  width: 100%;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: #fafaf8;
+  padding: 8px 12px;
+  font-size: 12px;
+  color: #444;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-bottom: 6px;
+  transition: border-color 0.15s, background 0.15s;
+  font-family: inherit;
+}
+
+.outlineBtn:hover {
+  border-color: var(--color-teal);
+  background: var(--color-light-teal);
+}
+
+.halfBtnRow {
+  display: flex;
+  gap: 8px;
+}
+
+.halfBtn {
+  flex: 1;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: #fafaf8;
+  padding: 8px;
+  font-size: 12px;
+  color: #444;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-family: inherit;
+}
+
+.fieldLabel {
+  font-size: 11px;
+  color: var(--color-muted);
+  margin-bottom: 4px;
+  font-weight: 500;
+}
+
+.fieldInput {
+  width: 100%;
+  border: 1px solid #e0ddd8;
+  border-radius: 8px;
+  padding: 7px 10px;
+  font-size: 12px;
+  color: #222;
+  background: var(--color-surface);
+  outline: none;
+  box-sizing: border-box;
+  font-family: inherit;
+  margin-bottom: 10px;
+  transition: border-color 0.15s;
+}
+
+.fieldInput:focus {
+  border-color: var(--color-teal);
+}
+
+.rangeInput {
+  width: 100%;
+  margin-bottom: 4px;
+  accent-color: var(--color-teal);
+  cursor: pointer;
+}
+
+.rangeLabels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--color-muted);
+  margin-bottom: 12px;
+}
+
+.paramValue {
+  color: var(--color-teal);
+  font-weight: 600;
+  font-size: 11px;
+}
+
+.infoIcon {
+  display: inline-flex;
+  align-items: center;
+  cursor: help;
+  color: #bbb;
+  font-size: 11px;
+  margin-left: 4px;
+  vertical-align: middle;
+  user-select: none;
+}
+
+.infoIcon:hover {
+  color: var(--color-teal);
+}
+
+.tooltipPortal {
+  position: fixed;
+  transform: translate(-50%, calc(-100% - 8px));
+  background: #1a1a1a;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1.6;
+  padding: 8px 10px;
+  border-radius: 7px;
+  width: 220px;
+  text-align: left;
+  white-space: normal;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+  pointer-events: none;
+  z-index: 9999;
+}
+
+.tooltipArrow {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: #1a1a1a;
+}

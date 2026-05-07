@@ -8,6 +8,10 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [react()],
+    resolve: {
+      // Prefer .tsx before .jsx so new TypeScript files shadow old ones during migration
+      extensions: [".mjs", ".js", ".ts", ".tsx", ".jsx", ".json"],
+    },
     server: {
       proxy: {
         "/api/ollama": {
@@ -29,6 +33,10 @@ export default defineConfig(({ mode }) => {
           },
         },
       },
+    },
+    test: {
+      globals: true,
+      environment: "node",
     },
   };
 });

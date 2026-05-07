@@ -1,0 +1,252 @@
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--color-surface);
+  border-right: 1px solid var(--color-border);
+}
+
+.chatArea {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  overflow: auto;
+}
+
+.emptyState {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.chatTitle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.chatTitleStar {
+  color: var(--color-accent);
+  font-size: 28px;
+}
+
+.chatTitleText {
+  font-size: 24px;
+  font-weight: 700;
+  color: #111;
+  letter-spacing: -0.5px;
+}
+
+.chatSubtitle {
+  color: var(--color-muted);
+  font-size: 13px;
+  margin: 0;
+}
+
+.messagesContainer {
+  flex: 1;
+  width: 100%;
+  max-width: 720px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+  margin-top: 16px;
+}
+
+.msgUser {
+  align-self: flex-end;
+  background: var(--color-teal);
+  color: #fff;
+  border-radius: 12px 12px 2px 12px;
+  padding: 8px 14px;
+  max-width: 70%;
+  font-size: 13px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.msgAssistant {
+  align-self: flex-start;
+  background: var(--color-bg);
+  color: var(--color-text);
+  border-radius: 12px 12px 12px 2px;
+  padding: 8px 14px;
+  max-width: 80%;
+  font-size: 13px;
+  line-height: 1.5;
+  border: 1px solid var(--color-border);
+}
+
+.msgThinking {
+  color: #aaa;
+  font-style: italic;
+}
+
+.inputArea {
+  padding: 12px 16px 16px;
+  border-top: 1px solid var(--color-border-alt);
+  background: var(--color-surface);
+}
+
+.suggestRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.tryLabel {
+  color: #aaa;
+  font-size: 11px;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.suggestChip {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  padding: 4px 12px;
+  font-size: 11px;
+  color: #444;
+  cursor: pointer;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: inherit;
+}
+
+.suggestChip:hover {
+  border-color: var(--color-teal);
+  background: var(--color-light-teal);
+}
+
+.chipIcon {
+  font-size: 12px;
+}
+
+.inputBox {
+  border: 1.5px solid #ddd;
+  border-radius: 10px;
+  background: var(--color-surface);
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 8px 12px;
+  transition: border-color 0.15s;
+}
+
+.inputBoxFocused {
+  border-color: var(--color-teal);
+}
+
+.fileInput {
+  display: none;
+}
+
+.inputEl {
+  flex: 1;
+  border: none;
+  outline: none;
+  resize: none;
+  font-size: 13px;
+  line-height: 1.5;
+  background: transparent;
+  color: var(--color-text);
+  font-family: inherit;
+  min-height: 20px;
+  max-height: 120px;
+}
+
+.iconBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #999;
+  padding: 2px;
+  display: flex;
+  align-items: center;
+  font-size: 16px;
+  border-radius: 6px;
+}
+
+.iconBtn:hover {
+  color: var(--color-teal);
+  background: var(--color-light-teal);
+}
+
+.sendBtn {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  transition: background 0.15s;
+  flex-shrink: 0;
+  background: #e5e3df;
+  color: #aaa;
+}
+
+.sendBtnActive {
+  background: var(--color-teal);
+  color: #fff;
+}
+
+.sendBtnStop {
+  background: var(--color-accent);
+  color: #fff;
+}
+
+.sendBtn:disabled {
+  cursor: not-allowed;
+}
+
+.disclaimer {
+  text-align: center;
+  font-size: 11px;
+  color: var(--color-muted);
+  margin-top: 8px;
+  line-height: 1.4;
+}
+
+.disclaimerAccent {
+  color: var(--color-accent);
+  font-weight: 600;
+}
+
+.msgSummary {
+  background: #f0f7f4;
+  border-color: #b8ddd0;
+  border-style: dashed;
+}
+
+.summaryLabel {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--color-teal);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+  opacity: 0.7;
+}
+
+.tokenCount {
+  margin-top: 6px;
+  font-size: 10px;
+  color: #bbb;
+  text-align: right;
+}

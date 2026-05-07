@@ -1,0 +1,27 @@
+:root {
+  --color-teal: #1a3a3a;
+  --color-accent: #e8472a;
+  --color-light-teal: #e8f5f0;
+  --color-bg: #f5f4f1;
+  --color-surface: #fff;
+  --color-border: #e5e3df;
+  --color-border-alt: #ece9e4;
+  --color-text: #1a1a1a;
+  --color-muted: #888;
+  --font-family: 'DM Sans', 'Segoe UI', sans-serif;
+  --font-size-base: 13px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-family);
+  font-size: var(--font-size-base);
+  color: var(--color-text);
+  background: var(--color-bg);
+}
