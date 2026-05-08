@@ -5,6 +5,7 @@ export interface Message {
   createdAt: number;
   tokens?: number;
   isSummary?: boolean;
+  rating?: 'up' | 'down';
 }
 
 export interface Session {

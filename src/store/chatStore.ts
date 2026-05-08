@@ -67,6 +67,7 @@ interface ChatState {
   dismissBanner: () => void;
   setPanelView: (view: 'builder' | 'settings') => void;
   addUserMessageToSession: (sessionId: string, userMsg: string) => void;
+  rateMessage: (sessionId: string, messageId: string, rating: 'up' | 'down') => void;
 }
 
 const initialSession = createEmptySession();
@@ -167,6 +168,20 @@ export const useChatStore = create<ChatState>()(
             if (s.id !== sessionId) return s;
             const nextMsgs = typeof updater === 'function' ? updater(s.messages) : updater;
             return { ...s, messages: nextMsgs };
+          }),
+        }));
+      },
+
+      rateMessage: (sessionId, messageId, rating) => {
+        set((state) => ({
+          sessions: state.sessions.map((s) => {
+            if (s.id !== sessionId) return s;
+            return {
+              ...s,
+              messages: s.messages.map((m) =>
+                m.id !== messageId ? m : { ...m, rating: m.rating === rating ? undefined : rating }
+              ),
+            };
           }),
         }));
       },

@@ -15,6 +15,7 @@ export function ChatColumn() {
   const setMessage = useChatStore((s) => s.setMessage);
   const activeSessionId = useChatStore((s) => s.activeSessionId);
   const sessions = useChatStore((s) => s.sessions);
+  const rateMessage = useChatStore((s) => s.rateMessage);
   const activeSession = sessions.find((s) => s.id === activeSessionId);
   const messages = activeSession?.messages ?? [];
   const hasMessages = messages.length > 0;
@@ -83,16 +84,14 @@ export function ChatColumn() {
         )}
         {hasMessages && (
           <div className={styles.messagesContainer}>
-            {messages.map((m) => (
-              <div
-                key={m.id}
-                className={[
-                  m.role === "user" ? styles.msgUser : styles.msgAssistant,
-                  m.isSummary ? styles.msgSummary : ""
-                ].join(" ").trim()}
-              >
-                {m.role === "assistant" ? (
-                  <>
+            {messages.map((m) =>
+              m.role === "user" ? (
+                <div key={m.id} className={styles.msgUser}>
+                  {m.text}
+                </div>
+              ) : (
+                <div key={m.id} className={styles.assistantRow}>
+                  <div className={[styles.msgAssistant, m.isSummary ? styles.msgSummary : ""].join(" ").trim()}>
                     {m.isSummary && (
                       <div className={styles.summaryLabel}>📝 Context summary</div>
                     )}
@@ -102,12 +101,26 @@ export function ChatColumn() {
                     {m.tokens !== undefined && (
                       <div className={styles.tokenCount}>📊 {m.tokens.toLocaleString()} tokens</div>
                     )}
-                  </>
-                ) : (
-                  m.text
-                )}
-              </div>
-            ))}
+                  </div>
+                  {!m.isSummary && (
+                    <div className={styles.ratingBtns}>
+                      <button
+                        type="button"
+                        className={`${styles.ratingBtn} ${m.rating === "up" ? styles.ratingBtnUp : ""}`}
+                        title="Good response"
+                        onClick={() => rateMessage(activeSessionId, m.id, "up")}
+                      >👍</button>
+                      <button
+                        type="button"
+                        className={`${styles.ratingBtn} ${m.rating === "down" ? styles.ratingBtnDown : ""}`}
+                        title="Bad response"
+                        onClick={() => rateMessage(activeSessionId, m.id, "down")}
+                      >👎</button>
+                    </div>
+                  )}
+                </div>
+              )
+            )}
             {loading && (
               <div className={`${styles.msgAssistant} ${styles.msgThinking}`}>
                 Thinking…
