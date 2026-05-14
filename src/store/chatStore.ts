@@ -1,25 +1,8 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
 import type { Session, Message } from '../types';
+import { apiGet, apiPost, apiPatch, apiDelete } from '../lib/api';
 
-function createEmptySession(): Session {
-  return {
-    id: crypto.randomUUID(),
-    title: 'New chat',
-    titleEdited: false,
-    messages: [],
-    archived: false,
-    bookmarked: false,
-    createdAt: Date.now(),
-  };
-}
-
-function titleFromFirstMessage(text: string): string {
-  const line = text.trim().split(/\r?\n/)[0] ?? '';
-  const t = line.replace(/\s+/g, ' ').trim();
-  if (!t) return 'New chat';
-  return t.length > 80 ? `${t.slice(0, 80)}…` : t;
-}
+type GetToken = () => Promise<string | null>;
 
 export function formatChatForShare(session: Session): string {
   const lines = session.messages.map((m) => {
@@ -52,180 +35,168 @@ interface ChatState {
   message: string;
   showBanner: boolean;
   panelView: 'builder' | 'settings';
-  newChat: () => void;
+  isLoaded: boolean;
+
+  fetchSessions: (getToken: GetToken) => Promise<void>;
+  newChat: (getToken: GetToken) => Promise<void>;
   selectSession: (id: string) => void;
   setMessage: (msg: string) => void;
   setLoading: (v: boolean) => void;
-  renameSession: (id: string, title: string) => void;
-  deleteSession: (id: string) => void;
-  archiveSession: (id: string) => void;
-  unarchiveSession: (id: string) => void;
-  toggleSessionBookmark: (id: string) => void;
+  renameSession: (id: string, title: string, getToken: GetToken) => Promise<void>;
+  deleteSession: (id: string, getToken: GetToken) => Promise<void>;
+  archiveSession: (id: string, getToken: GetToken) => Promise<void>;
+  unarchiveSession: (id: string, getToken: GetToken) => Promise<void>;
+  toggleSessionBookmark: (id: string, getToken: GetToken) => Promise<void>;
   toggleBookmarksFilter: () => void;
   showAllChats: () => void;
   setMessagesForSession: (sessionId: string) => (updater: Message[] | ((prev: Message[]) => Message[])) => void;
+  patchSessionLocally: (sessionId: string, patch: Partial<Session>) => void;
   dismissBanner: () => void;
   setPanelView: (view: 'builder' | 'settings') => void;
-  addUserMessageToSession: (sessionId: string, userMsg: string) => void;
-  rateMessage: (sessionId: string, messageId: string, rating: 'up' | 'down') => void;
+  addUserMessageToSession: (sessionId: string, userMsg: Message) => void;
+  rateMessage: (sessionId: string, messageId: string, rating: 'up' | 'down', getToken: GetToken) => Promise<void>;
 }
 
-const initialSession = createEmptySession();
+export const useChatStore = create<ChatState>()((set, get) => ({
+  sessions: [],
+  activeSessionId: '',
+  bookmarksOnly: false,
+  loading: false,
+  message: '',
+  showBanner: true,
+  panelView: 'builder',
+  isLoaded: false,
 
-export const useChatStore = create<ChatState>()(
-  persist(
-    (set, get) => ({
-      sessions: [initialSession],
-      activeSessionId: initialSession.id,
-      bookmarksOnly: false,
-      loading: false,
+  fetchSessions: async (getToken) => {
+    const sessions = await apiGet<Session[]>('/sessions', getToken);
+    const active = sessions.find((s) => !s.archived)?.id ?? sessions[0]?.id ?? '';
+    set({ sessions, activeSessionId: active, isLoaded: true });
+  },
+
+  newChat: async (getToken) => {
+    const session = await apiPost<Session>('/sessions', {}, getToken);
+    set((state) => ({
+      sessions: [session, ...state.sessions],
+      activeSessionId: session.id,
       message: '',
-      showBanner: true,
-      panelView: 'builder',
+      bookmarksOnly: false,
+    }));
+  },
 
-      newChat: () => {
-        const s = createEmptySession();
-        set((state) => ({
-          sessions: [s, ...state.sessions],
-          activeSessionId: s.id,
-          message: '',
-          bookmarksOnly: false,
-        }));
-      },
+  selectSession: (id) => set({ activeSessionId: id, message: '' }),
 
-      selectSession: (id) => set({ activeSessionId: id, message: '' }),
+  setMessage: (msg) => set({ message: msg }),
 
-      setMessage: (msg) => set({ message: msg }),
+  setLoading: (v) => set({ loading: v }),
 
-      setLoading: (v) => set({ loading: v }),
+  renameSession: async (id, title, getToken) => {
+    const trimmed = title.trim();
+    if (!trimmed) return;
+    await apiPatch<Session>(`/sessions/${id}`, { title: trimmed, titleEdited: true }, getToken);
+    set((state) => ({
+      sessions: state.sessions.map((s) =>
+        s.id === id ? { ...s, title: trimmed, titleEdited: true } : s
+      ),
+    }));
+  },
 
-      renameSession: (id, title) => {
-        const trimmed = title.trim();
-        if (!trimmed) return;
-        set((state) => ({
-          sessions: state.sessions.map((s) =>
-            s.id === id ? { ...s, title: trimmed, titleEdited: true } : s
-          ),
-        }));
-      },
+  deleteSession: async (id, getToken) => {
+    await apiDelete(`/sessions/${id}`, getToken);
+    set((state) => {
+      const next = state.sessions.filter((s) => s.id !== id);
+      if (next.length === 0) return { sessions: next, activeSessionId: '' };
+      const newActiveId =
+        state.activeSessionId === id
+          ? (firstVisibleId(next, state.bookmarksOnly) ?? next[0]?.id ?? '')
+          : state.activeSessionId;
+      return { sessions: next, activeSessionId: newActiveId };
+    });
+  },
 
-      deleteSession: (id) => {
-        set((state) => {
-          const next = state.sessions.filter((s) => s.id !== id);
-          if (next.length === 0) {
-            const fresh = createEmptySession();
-            return { sessions: [fresh], activeSessionId: fresh.id };
-          }
-          const newActiveId =
-            state.activeSessionId === id
-              ? (firstVisibleId(next, state.bookmarksOnly) ?? next[0]?.id ?? '')
-              : state.activeSessionId;
-          return { sessions: next, activeSessionId: newActiveId };
-        });
-      },
+  archiveSession: async (id, getToken) => {
+    await apiPatch<Session>(`/sessions/${id}`, { archived: true }, getToken);
+    set((state) => {
+      const next = state.sessions.map((s) => (s.id === id ? { ...s, archived: true } : s));
+      if (state.activeSessionId !== id) return { sessions: next };
+      const pick = firstVisibleId(next, state.bookmarksOnly);
+      return { sessions: next, ...(pick ? { activeSessionId: pick } : { activeSessionId: '' }) };
+    });
+  },
 
-      archiveSession: (id) => {
-        set((state) => {
-          const next = state.sessions.map((s) => (s.id === id ? { ...s, archived: true } : s));
-          if (state.activeSessionId !== id) return { sessions: next };
-          const pick = firstVisibleId(next, state.bookmarksOnly);
-          if (pick) return { sessions: next, activeSessionId: pick };
-          const fresh = createEmptySession();
-          return { sessions: [fresh, ...next], activeSessionId: fresh.id };
-        });
-      },
+  unarchiveSession: async (id, getToken) => {
+    await apiPatch<Session>(`/sessions/${id}`, { archived: false }, getToken);
+    set((state) => ({
+      sessions: state.sessions.map((s) => (s.id === id ? { ...s, archived: false } : s)),
+    }));
+  },
 
-      unarchiveSession: (id) =>
-        set((state) => ({
-          sessions: state.sessions.map((s) => (s.id === id ? { ...s, archived: false } : s)),
-        })),
+  toggleSessionBookmark: async (id, getToken) => {
+    const session = get().sessions.find((s) => s.id === id);
+    if (!session) return;
+    await apiPatch<Session>(`/sessions/${id}`, { bookmarked: !session.bookmarked }, getToken);
+    set((state) => ({
+      sessions: state.sessions.map((s) =>
+        s.id === id ? { ...s, bookmarked: !s.bookmarked } : s
+      ),
+    }));
+  },
 
-      toggleSessionBookmark: (id) =>
-        set((state) => ({
-          sessions: state.sessions.map((s) =>
-            s.id === id ? { ...s, bookmarked: !s.bookmarked } : s
-          ),
-        })),
+  toggleBookmarksFilter: () => {
+    set((state) => {
+      const next = !state.bookmarksOnly;
+      if (!next) return { bookmarksOnly: false };
+      const active = state.sessions.find((s) => s.id === state.activeSessionId);
+      if (active && (!active.bookmarked || active.archived)) {
+        const pick = state.sessions.find((s) => s.bookmarked && !s.archived);
+        return { bookmarksOnly: true, ...(pick ? { activeSessionId: pick.id } : {}) };
+      }
+      return { bookmarksOnly: true };
+    });
+  },
 
-      toggleBookmarksFilter: () => {
-        set((state) => {
-          const next = !state.bookmarksOnly;
-          if (!next) return { bookmarksOnly: false };
-          const active = state.sessions.find((s) => s.id === state.activeSessionId);
-          if (active && (!active.bookmarked || active.archived)) {
-            const pick = state.sessions.find((s) => s.bookmarked && !s.archived);
-            return { bookmarksOnly: true, ...(pick ? { activeSessionId: pick.id } : {}) };
-          }
-          return { bookmarksOnly: true };
-        });
-      },
+  showAllChats: () => set({ bookmarksOnly: false }),
 
-      showAllChats: () => set({ bookmarksOnly: false }),
-
-      setMessagesForSession: (sessionId) => (updater) => {
-        set((state) => ({
-          sessions: state.sessions.map((s) => {
-            if (s.id !== sessionId) return s;
-            const nextMsgs = typeof updater === 'function' ? updater(s.messages) : updater;
-            return { ...s, messages: nextMsgs };
-          }),
-        }));
-      },
-
-      rateMessage: (sessionId, messageId, rating) => {
-        set((state) => ({
-          sessions: state.sessions.map((s) => {
-            if (s.id !== sessionId) return s;
-            return {
-              ...s,
-              messages: s.messages.map((m) =>
-                m.id !== messageId ? m : { ...m, rating: m.rating === rating ? undefined : rating }
-              ),
-            };
-          }),
-        }));
-      },
-
-      dismissBanner: () => set({ showBanner: false }),
-
-      setPanelView: (view) => set({ panelView: view }),
-
-      addUserMessageToSession: (sessionId, userMsg) => {
-        // read current sessions inside action to avoid stale closure
-        const { sessions } = get();
-        const session = sessions.find((s) => s.id === sessionId);
-        const autoTitle =
-          session && !session.titleEdited && session.messages.length === 0
-            ? titleFromFirstMessage(userMsg)
-            : null;
-
-        set((state) => ({
-          sessions: state.sessions.map((s) => {
-            if (s.id !== sessionId) return s;
-            return {
-              ...s,
-              ...(autoTitle ? { title: autoTitle } : {}),
-              messages: [
-                ...s.messages,
-                {
-                  id: crypto.randomUUID(),
-                  role: 'user' as const,
-                  text: userMsg,
-                  createdAt: Date.now(),
-                },
-              ],
-            };
-          }),
-        }));
-      },
-    }),
-    {
-      name: 'chat-store',
-      partialize: (state) => ({
-        sessions: state.sessions,
-        activeSessionId: state.activeSessionId,
-        bookmarksOnly: state.bookmarksOnly,
+  setMessagesForSession: (sessionId) => (updater) => {
+    set((state) => ({
+      sessions: state.sessions.map((s) => {
+        if (s.id !== sessionId) return s;
+        const nextMsgs = typeof updater === 'function' ? updater(s.messages) : updater;
+        return { ...s, messages: nextMsgs };
       }),
-    }
-  )
-);
+    }));
+  },
+
+  rateMessage: async (sessionId, messageId, rating, getToken) => {
+    await apiPatch(`/sessions/${sessionId}/messages/${messageId}`, { rating }, getToken);
+    set((state) => ({
+      sessions: state.sessions.map((s) => {
+        if (s.id !== sessionId) return s;
+        return {
+          ...s,
+          messages: s.messages.map((m) =>
+            m.id !== messageId ? m : { ...m, rating: m.rating === rating ? undefined : rating }
+          ),
+        };
+      }),
+    }));
+  },
+
+  patchSessionLocally: (sessionId, patch) => {
+    set((state) => ({
+      sessions: state.sessions.map((s) => (s.id === sessionId ? { ...s, ...patch } : s)),
+    }));
+  },
+
+  dismissBanner: () => set({ showBanner: false }),
+
+  setPanelView: (view) => set({ panelView: view }),
+
+  addUserMessageToSession: (sessionId, userMsg) => {
+    set((state) => ({
+      sessions: state.sessions.map((s) => {
+        if (s.id !== sessionId) return s;
+        return { ...s, messages: [...s.messages, userMsg] };
+      }),
+    }));
+  },
+}));

@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
 import ReactDOM from 'react-dom';
+import { useAuth } from '@clerk/clerk-react';
 import { useAgentStore } from '../store/agentStore';
 import { Toggle } from './Toggle';
 import styles from './SettingsPanel.module.css';
@@ -34,12 +35,17 @@ function InfoTooltip({ text }: { text: string }) {
 }
 
 export function SettingsPanel() {
+  const { getToken } = useAuth();
   const agents = useAgentStore((s) => s.agents);
   const activeAgentId = useAgentStore((s) => s.activeAgentId);
+  const patchAgentLocally = useAgentStore((s) => s.patchAgentLocally);
   const updateAgent = useAgentStore((s) => s.updateAgent);
   const activeAgent = agents.find((a) => a.id === activeAgentId);
 
   if (!activeAgent) return null;
+
+  const sync = (patch: Parameters<typeof updateAgent>[1]) =>
+    void updateAgent(activeAgentId, patch, getToken);
 
   return (
     <div>
@@ -51,7 +57,7 @@ export function SettingsPanel() {
           </div>
           <Toggle
             on={activeAgent.advancedControl}
-            onChange={(v) => updateAgent(activeAgentId, { advancedControl: v })}
+            onChange={(v) => sync({ advancedControl: v })}
           />
         </div>
       </div>
@@ -64,7 +70,7 @@ export function SettingsPanel() {
               type="checkbox"
               className={styles.checkbox}
               checked={activeAgent.enableFileSearch}
-              onChange={(e) => updateAgent(activeAgentId, { enableFileSearch: e.target.checked })}
+              onChange={(e) => sync({ enableFileSearch: e.target.checked })}
             />
             Enable File Search
             <span style={{ fontSize: '11px', color: '#aaa' }}>ⓘ</span>
@@ -101,7 +107,9 @@ export function SettingsPanel() {
         <input
           type="range" min="0" max="1" step="0.1"
           value={activeAgent.temperature}
-          onChange={(e) => updateAgent(activeAgentId, { temperature: parseFloat(e.target.value) })}
+          onChange={(e) => patchAgentLocally(activeAgentId, { temperature: parseFloat(e.target.value) })}
+          onMouseUp={() => sync({ temperature: activeAgent.temperature })}
+          onTouchEnd={() => sync({ temperature: activeAgent.temperature })}
           className={styles.rangeInput}
         />
         <div className={styles.rangeLabels}>
@@ -116,7 +124,9 @@ export function SettingsPanel() {
         <input
           type="range" min="256" max="4096" step="256"
           value={activeAgent.maxTokens}
-          onChange={(e) => updateAgent(activeAgentId, { maxTokens: parseInt(e.target.value, 10) })}
+          onChange={(e) => patchAgentLocally(activeAgentId, { maxTokens: parseInt(e.target.value, 10) })}
+          onMouseUp={() => sync({ maxTokens: activeAgent.maxTokens })}
+          onTouchEnd={() => sync({ maxTokens: activeAgent.maxTokens })}
           className={styles.rangeInput}
         />
         <div className={styles.rangeLabels}>
@@ -131,7 +141,9 @@ export function SettingsPanel() {
         <input
           type="range" min="0.1" max="1" step="0.05"
           value={activeAgent.topP}
-          onChange={(e) => updateAgent(activeAgentId, { topP: parseFloat(e.target.value) })}
+          onChange={(e) => patchAgentLocally(activeAgentId, { topP: parseFloat(e.target.value) })}
+          onMouseUp={() => sync({ topP: activeAgent.topP })}
+          onTouchEnd={() => sync({ topP: activeAgent.topP })}
           className={styles.rangeInput}
         />
         <div className={styles.rangeLabels}>
@@ -146,7 +158,8 @@ export function SettingsPanel() {
           className={styles.fieldInput}
           placeholder="Support contact name"
           value={activeAgent.supportName}
-          onChange={(e) => updateAgent(activeAgentId, { supportName: e.target.value })}
+          onChange={(e) => patchAgentLocally(activeAgentId, { supportName: e.target.value })}
+          onBlur={() => sync({ supportName: activeAgent.supportName })}
         />
         <div className={styles.fieldLabel}>Email</div>
         <input
@@ -154,7 +167,8 @@ export function SettingsPanel() {
           placeholder="support@example.com"
           type="email"
           value={activeAgent.supportEmail}
-          onChange={(e) => updateAgent(activeAgentId, { supportEmail: e.target.value })}
+          onChange={(e) => patchAgentLocally(activeAgentId, { supportEmail: e.target.value })}
+          onBlur={() => sync({ supportEmail: activeAgent.supportEmail })}
         />
       </div>
     </div>

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useAuth } from '@clerk/clerk-react';
 import { useAgentStore } from '../store/agentStore';
 import { Toggle } from './Toggle';
 import type { AgentCategory } from '../types';
@@ -12,9 +13,11 @@ function parseVariables(instructions: string): string[] {
 }
 
 export function BuilderPanel() {
+  const { getToken } = useAuth();
   const [showVariables, setShowVariables] = useState(false);
   const agents = useAgentStore((s) => s.agents);
   const activeAgentId = useAgentStore((s) => s.activeAgentId);
+  const patchAgentLocally = useAgentStore((s) => s.patchAgentLocally);
   const updateAgent = useAgentStore((s) => s.updateAgent);
   const createAgent = useAgentStore((s) => s.createAgent);
   const selectAgent = useAgentStore((s) => s.selectAgent);
@@ -23,6 +26,9 @@ export function BuilderPanel() {
   if (!activeAgent) return null;
 
   const detectedVars = parseVariables(activeAgent.instructions);
+
+  const sync = (patch: Parameters<typeof updateAgent>[1]) =>
+    void updateAgent(activeAgentId, patch, getToken);
 
   return (
     <div>
@@ -39,7 +45,7 @@ export function BuilderPanel() {
       </select>
 
       <div className={styles.createAgentRow}>
-        <button type="button" className={styles.createBtn} onClick={createAgent}>
+        <button type="button" className={styles.createBtn} onClick={() => void createAgent(getToken)}>
           ＋ Create New Agent
         </button>
         <button type="button" className={styles.selectBtn}>
@@ -53,7 +59,8 @@ export function BuilderPanel() {
       <input
         className={styles.fieldInput}
         value={activeAgent.name}
-        onChange={(e) => updateAgent(activeAgentId, { name: e.target.value })}
+        onChange={(e) => patchAgentLocally(activeAgentId, { name: e.target.value })}
+        onBlur={() => sync({ name: activeAgent.name })}
       />
       <div className={styles.agentIdText}>agent_1kvRvkNOz7pSOHiKWeJVV</div>
 
@@ -61,7 +68,8 @@ export function BuilderPanel() {
       <input
         className={styles.fieldInput}
         value={activeAgent.description}
-        onChange={(e) => updateAgent(activeAgentId, { description: e.target.value })}
+        onChange={(e) => patchAgentLocally(activeAgentId, { description: e.target.value })}
+        onBlur={() => sync({ description: activeAgent.description })}
       />
 
       <div className={styles.fieldLabel}>Category *</div>
@@ -69,7 +77,7 @@ export function BuilderPanel() {
         className={styles.fieldInput}
         style={{ cursor: 'pointer' }}
         value={activeAgent.category}
-        onChange={(e) => updateAgent(activeAgentId, { category: e.target.value as AgentCategory })}
+        onChange={(e) => sync({ category: e.target.value as AgentCategory })}
       >
         {CATEGORIES.map((c) => (
           <option key={c} value={c}>{c}</option>
@@ -90,7 +98,8 @@ export function BuilderPanel() {
       <textarea
         className={styles.textarea}
         value={activeAgent.instructions}
-        onChange={(e) => updateAgent(activeAgentId, { instructions: e.target.value })}
+        onChange={(e) => patchAgentLocally(activeAgentId, { instructions: e.target.value })}
+        onBlur={() => sync({ instructions: activeAgent.instructions })}
       />
 
       {showVariables && (
@@ -111,10 +120,11 @@ export function BuilderPanel() {
                   placeholder={`Value for ${name}`}
                   value={activeAgent.variables[name] ?? ''}
                   onChange={(e) =>
-                    updateAgent(activeAgentId, {
+                    patchAgentLocally(activeAgentId, {
                       variables: { ...activeAgent.variables, [name]: e.target.value },
                     })
                   }
+                  onBlur={() => sync({ variables: activeAgent.variables })}
                 />
               </div>
             ))
@@ -126,7 +136,7 @@ export function BuilderPanel() {
       <div className={styles.modelDisplay}>
         <span>🤖</span>
         <span style={{ flex: 1, fontSize: '11px', color: '#555' }}>
-          global.anthropic.claude-sonnet-4-5-20250929-v1:0
+          OpenAI {process.env.OPENAI_MODEL ?? 'gpt-4o-mini'}
         </span>
       </div>
 
@@ -140,7 +150,7 @@ export function BuilderPanel() {
         </div>
         <Toggle
           on={activeAgent.enableArtifacts}
-          onChange={(v) => updateAgent(activeAgentId, { enableArtifacts: v })}
+          onChange={(v) => sync({ enableArtifacts: v })}
         />
       </div>
 
@@ -151,7 +161,7 @@ export function BuilderPanel() {
         </div>
         <Toggle
           on={activeAgent.enableHighQuality}
-          onChange={(v) => updateAgent(activeAgentId, { enableHighQuality: v })}
+          onChange={(v) => sync({ enableHighQuality: v })}
         />
       </div>
 
@@ -162,7 +172,7 @@ export function BuilderPanel() {
         </div>
         <Toggle
           on={activeAgent.advancedControl}
-          onChange={(v) => updateAgent(activeAgentId, { advancedControl: v })}
+          onChange={(v) => sync({ advancedControl: v })}
         />
       </div>
     </div>

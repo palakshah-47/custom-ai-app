@@ -14,3 +14,21 @@
   flex: 1;
   overflow: hidden;
 }
+
+.authPage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: var(--color-bg);
+}
+
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  font-family: var(--font-family);
+  color: var(--color-text);
+  font-size: var(--font-size-base);
+}

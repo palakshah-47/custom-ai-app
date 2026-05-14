@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useAuth } from '@clerk/clerk-react';
 import { useChatStore, formatChatForShare } from '../store/chatStore';
 import type { Session } from '../types';
 import styles from './ChatSidebar.module.css';
@@ -149,6 +150,8 @@ function ChatSessionRow({
 }
 
 export function ChatSidebar() {
+  const { getToken } = useAuth();
+
   const sessions = useChatStore((s) => s.sessions);
   const activeSessionId = useChatStore((s) => s.activeSessionId);
   const bookmarksOnly = useChatStore((s) => s.bookmarksOnly);
@@ -175,9 +178,9 @@ export function ChatSidebar() {
   const commitEdit = useCallback(() => {
     if (!editingSessionId) return;
     const t = draftTitle.trim();
-    if (t) renameSession(editingSessionId, t);
+    if (t) void renameSession(editingSessionId, t, getToken);
     setEditingSessionId(null);
-  }, [editingSessionId, draftTitle, renameSession]);
+  }, [editingSessionId, draftTitle, renameSession, getToken]);
 
   const cancelEdit = useCallback(() => setEditingSessionId(null), []);
 
@@ -212,7 +215,7 @@ export function ChatSidebar() {
 
   const handleDelete = (id: string) => {
     if (!window.confirm('Delete this chat? This cannot be undone.')) return;
-    deleteSession(id);
+    void deleteSession(id, getToken);
   };
 
   const handleShare = async (id: string) => {
@@ -236,10 +239,10 @@ export function ChatSidebar() {
     setDraftTitle,
     onSelectSession: selectSession,
     openMenu,
-    onToggleBookmark: toggleSessionBookmark,
+    onToggleBookmark: (id: string) => void toggleSessionBookmark(id, getToken),
     onShare: (id: string) => void handleShare(id),
-    onUnarchive: unarchiveSession,
-    onArchive: archiveSession,
+    onUnarchive: (id: string) => void unarchiveSession(id, getToken),
+    onArchive: (id: string) => void archiveSession(id, getToken),
     onDelete: handleDelete,
     setMenuOpenId,
   };
@@ -263,7 +266,7 @@ export function ChatSidebar() {
         >
           🔖
         </button>
-        <button type="button" className={styles.sidebarBtn} title="New chat" onClick={newChat}>
+        <button type="button" className={styles.sidebarBtn} title="New chat" onClick={() => void newChat(getToken)}>
           ✏️
         </button>
       </div>

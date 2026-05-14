@@ -1,0 +1,61 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String    @id
+  createdAt DateTime  @default(now())
+  sessions  Session[]
+  agents    Agent[]
+}
+
+model Session {
+  id          String    @id @default(uuid())
+  title       String    @default("New chat")
+  titleEdited Boolean   @default(false)
+  archived    Boolean   @default(false)
+  bookmarked  Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages    Message[]
+}
+
+model Message {
+  id        String   @id @default(uuid())
+  role      String
+  text      String
+  tokens    Int?
+  isSummary Boolean  @default(false)
+  rating    String?
+  createdAt DateTime @default(now())
+  sessionId String
+  session   Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+}
+
+model Agent {
+  id                String   @id @default(uuid())
+  name              String
+  description       String   @default("")
+  category          String   @default("Others")
+  instructions      String   @default("")
+  enableArtifacts   Boolean  @default(false)
+  enableHighQuality Boolean  @default(false)
+  advancedControl   Boolean  @default(false)
+  enableFileSearch  Boolean  @default(false)
+  supportName       String   @default("")
+  supportEmail      String   @default("")
+  temperature       Float    @default(0.7)
+  maxTokens         Int      @default(1000)
+  topP              Float    @default(0.9)
+  variables         Json     @default("{}")
+  createdAt         DateTime @default(now())
+  userId            String
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}

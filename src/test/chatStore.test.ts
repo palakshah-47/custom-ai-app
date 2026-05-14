@@ -1,6 +1,17 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { useChatStore } from '../store/chatStore';
 import type { Session } from '../types';
+
+vi.mock('../lib/api', () => ({
+  apiGet: vi.fn(),
+  apiPost: vi.fn((_path: string, _body: unknown) =>
+    Promise.resolve({ id: crypto.randomUUID(), title: 'New chat', titleEdited: false, messages: [], archived: false, bookmarked: false, createdAt: Date.now() })
+  ),
+  apiPatch: vi.fn((_path: string, body: unknown) => Promise.resolve(body)),
+  apiDelete: vi.fn(() => Promise.resolve()),
+}));
+
+const mockGetToken = () => Promise.resolve('mock-token');
 
 const baseSession: Session = {
   id: 'test-session',
@@ -21,37 +32,38 @@ function resetChatStore() {
     message: '',
     showBanner: true,
     panelView: 'builder',
+    isLoaded: true,
   });
 }
 
 describe('chatStore', () => {
   beforeEach(resetChatStore);
 
-  it('newChat creates a session and sets it as active', () => {
-    useChatStore.getState().newChat();
+  it('newChat creates a session and sets it as active', async () => {
+    await useChatStore.getState().newChat(mockGetToken);
     const state = useChatStore.getState();
     expect(state.sessions).toHaveLength(2);
     expect(state.activeSessionId).toBe(state.sessions[0]?.id);
   });
 
-  it('deleteSession removes the session and falls back to another', () => {
-    useChatStore.getState().newChat();
+  it('deleteSession removes the session and falls back to another', async () => {
+    await useChatStore.getState().newChat(mockGetToken);
     const firstId = useChatStore.getState().sessions[1]?.id ?? '';
-    useChatStore.getState().deleteSession(firstId);
+    await useChatStore.getState().deleteSession(firstId, mockGetToken);
     const state = useChatStore.getState();
     expect(state.sessions.every((s) => s.id !== firstId)).toBe(true);
   });
 
-  it('deleteSession on last session creates a fresh one', () => {
-    useChatStore.getState().deleteSession('test-session');
+  it('deleteSession on last session leaves sessions empty with blank activeSessionId', async () => {
+    await useChatStore.getState().deleteSession('test-session', mockGetToken);
     const state = useChatStore.getState();
-    expect(state.sessions).toHaveLength(1);
-    expect(state.sessions[0]?.id).not.toBe('test-session');
+    expect(state.sessions).toHaveLength(0);
+    expect(state.activeSessionId).toBe('');
   });
 
-  it('selectSession sets activeSessionId and clears message', () => {
+  it('selectSession sets activeSessionId and clears message', async () => {
     useChatStore.setState({ message: 'hello' });
-    useChatStore.getState().newChat();
+    await useChatStore.getState().newChat(mockGetToken);
     useChatStore.getState().selectSession('test-session');
     const state = useChatStore.getState();
     expect(state.activeSessionId).toBe('test-session');
@@ -66,17 +78,17 @@ describe('chatStore', () => {
     expect(useChatStore.getState().bookmarksOnly).toBe(false);
   });
 
-  it('renameSession updates title and sets titleEdited', () => {
-    useChatStore.getState().renameSession('test-session', 'My Chat');
+  it('renameSession updates title and sets titleEdited', async () => {
+    await useChatStore.getState().renameSession('test-session', 'My Chat', mockGetToken);
     const session = useChatStore.getState().sessions.find((s) => s.id === 'test-session');
     expect(session?.title).toBe('My Chat');
     expect(session?.titleEdited).toBe(true);
   });
 
-  it('toggleSessionBookmark flips the bookmarked flag', () => {
-    useChatStore.getState().toggleSessionBookmark('test-session');
+  it('toggleSessionBookmark flips the bookmarked flag', async () => {
+    await useChatStore.getState().toggleSessionBookmark('test-session', mockGetToken);
     expect(useChatStore.getState().sessions[0]?.bookmarked).toBe(true);
-    useChatStore.getState().toggleSessionBookmark('test-session');
+    await useChatStore.getState().toggleSessionBookmark('test-session', mockGetToken);
     expect(useChatStore.getState().sessions[0]?.bookmarked).toBe(false);
   });
 });

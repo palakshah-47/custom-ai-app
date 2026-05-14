@@ -1,6 +1,7 @@
 import React, { useState, useRef } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { useAuth } from "@clerk/clerk-react";
 import { useChatStore } from "../store/chatStore";
 import { useAgentStore } from "../store/agentStore";
 import { useSendMessage } from "../hooks/useSendMessage";
@@ -8,6 +9,7 @@ import { SUGGESTIONS } from "../constants/appConstants";
 import styles from "./ChatColumn.module.css";
 
 export function ChatColumn() {
+  const { getToken } = useAuth();
   const [inputFocused, setInputFocused] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -108,13 +110,13 @@ export function ChatColumn() {
                         type="button"
                         className={`${styles.ratingBtn} ${m.rating === "up" ? styles.ratingBtnUp : ""}`}
                         title="Good response"
-                        onClick={() => rateMessage(activeSessionId, m.id, "up")}
+                        onClick={() => void rateMessage(activeSessionId, m.id, "up", getToken)}
                       >👍</button>
                       <button
                         type="button"
                         className={`${styles.ratingBtn} ${m.rating === "down" ? styles.ratingBtnDown : ""}`}
                         title="Bad response"
-                        onClick={() => rateMessage(activeSessionId, m.id, "down")}
+                        onClick={() => void rateMessage(activeSessionId, m.id, "down", getToken)}
                       >👎</button>
                     </div>
                   )}
