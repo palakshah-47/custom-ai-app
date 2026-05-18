@@ -1,6 +1,16 @@
-import { Router } from 'express';
+import { Router, Request } from 'express';
 import { prisma } from '../lib/prisma.js';
 import { requireAuth, ensureUser } from '../middleware/requireAuth.js';
+
+declare global {
+  namespace Express {
+    interface Request {
+      auth?: {
+        userId: string;
+      };
+    }
+  }
+}
 
 const router = Router();
 
